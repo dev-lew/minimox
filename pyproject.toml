@@ -1,7 +1,7 @@
 [project]
 name = "minimox"
 version = "0.1.0"
-description = "Proxmox infra for small compute"
+description = "Proxmox infra for small compute."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
