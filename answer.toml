@@ -1,0 +1,20 @@
+[global]
+keyboard = "en-us"
+country = "us"
+fqdn = "compute-0.home.arpa"
+mailto = "admin@no.invalid"
+timezone = "America/New-York"
+root-password = ""
+root-ssh-keys = [
+    ""
+]
+
+[network]
+source = "from-answer"
+cidr = "192.168.69.0/27"
+dns = "192.168.71.250"
+gateway = "192.168.69.1"
+
+[disk-setup]
+filesystem = "xfs"
+disk-list = ["nvme0n1"]
