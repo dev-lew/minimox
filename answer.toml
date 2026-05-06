@@ -11,10 +11,10 @@ root-ssh-keys = [
 
 [network]
 source = "from-answer"
-cidr = "192.168.69.0/27"
-dns = "192.168.71.250"
-gateway = "192.168.69.1"
-filter.ID_NET_NAME_MAC = "wl*"
+cidr = "192.168.68.10/22"
+dns = "192.168.68.57"
+gateway = "192.168.68.1"
+filter.ID_NET_NAME = "*"
 
 [disk-setup]
 filesystem = "xfs"
