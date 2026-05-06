@@ -14,7 +14,7 @@ source = "from-answer"
 cidr = "192.168.68.10/22"
 dns = "192.168.68.57"
 gateway = "192.168.68.1"
-filter.ID_NET_NAME = "*"
+filter.ID_NET_NAME = "en*"
 
 [disk-setup]
 filesystem = "xfs"
