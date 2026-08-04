@@ -1,0 +1,81 @@
+---
+- name: Create template
+  hosts: proxmox
+  module_defaults:
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox_api_host }}"
+      api_user: "{{ proxmox_api_user }}"
+      validate_certs: false
+
+  tasks:
+    - name: Download cloud image
+      ansible.builtin.get_url:
+        url: "{{ template.url }}"
+        dest: "/var/lib/vz/template/iso/{{ template.filename }}"
+        mode: "0644"
+
+    - name: Create template VM
+      community.proxmox.proxmox_kvm:
+        node: "{{ template.node }}"
+        vmid: "{{ template.vmid }}"
+        name: "{{ template.name }}"
+        memory: 1024
+        cores: 1
+        state: present
+      delegate_to: localhost
+
+    - name: Import cloud image
+      ansible.builtin.command:
+        argv:
+          - qm
+          - importdisk
+          - "{{ template.vmid }}"
+          - "/var/lib/vz/template/iso/{{ template.filename }}"
+          - local-lvm
+      register: import_result
+      changed_when: "'successfully imported' in import_result.stdout"
+
+    - name: Add network interface
+      ansible.builtin.command:
+        argv:
+          - qm
+          - set
+          - "{{ template.vmid }}"
+          - --net0
+          - "virtio,bridge=vmbr0"
+
+    - name: Attach imported disk
+      ansible.builtin.command:
+        argv:
+          - qm
+          - set
+          - "{{ template.vmid }}"
+          - --scsihw
+          - virtio-scsi-single
+          - --scsi0
+          - "local-lvm:vm-{{ template.vmid }}-disk-0"
+
+    - name: Configure boot order
+      community.proxmox.proxmox_kvm:
+        node: "{{ template.node }}"
+        vmid: "{{ template.vmid }}"
+        boot: "order=scsi0"
+        update: true
+      delegate_to: localhost
+
+    - name: Add Cloud-Init drive
+      ansible.builtin.command:
+        argv:
+          - qm
+          - set
+          - "{{ template.vmid }}"
+          - --ide2
+          - "local-lvm:cloudinit"
+
+    - name: Convert to template
+      community.proxmox.proxmox_kvm:
+        node: "{{ template.node }}"
+        vmid: "{{ template.vmid }}"
+        template: true
+        update: true
+      delegate_to: localhost

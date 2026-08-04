@@ -1,0 +1,32 @@
+---
+- name: Create VMs
+  hosts: proxmox
+  module_defaults:
+    community.proxmox.proxmox_kvm:
+      api_host: "{{ proxmox_api_host }}"
+      api_user: "{{ proxmox_api_user }}"
+      validate_certs: false
+
+  tasks:
+    - name: Clone VM
+      community.proxmox.proxmox_kvm:
+        node: "{{ item.node }}"
+        clone: "{{ template.name }}"
+        newid: "{{ item.vmid }}"
+        name: "{{ item.name }}"
+        full: true
+        state: present
+      delegate_to: localhost
+      loop: "{{ vms }}"
+
+    - name: Configure cloned VM cloud-init
+      community.proxmox.proxmox_kvm:
+        node: "{{ item.node }}"
+        vmid: "{{ item.vmid }}"
+        ciuser: ubuntu
+        sshkeys: "{{ lookup('file', '~/.ssh/vm-proxmox-id-ed25519.pub') }}"
+        ipconfig:
+          ipconfig0: "ip={{ item.ip }}/22,gw=192.168.68.1"
+        update: true
+      delegate_to: localhost
+      loop: "{{ vms }}"

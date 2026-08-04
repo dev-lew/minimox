@@ -1,0 +1,24 @@
+---
+ansible_user: root
+ansible_ssh_private_key_file: ~/.ssh/proxmox-id-ed25519
+
+proxmox_api_host: pve.home.arpa
+proxmox_api_user: root@pam
+
+template:
+  node: compute-0
+  vmid: 9000
+  name: ubuntu-26.04-template
+  filename: resolute-server-cloudimg-amd64.img
+  url: https://cloud-images.ubuntu.com/resolute/current/resolute-server-cloudimg-amd64.img
+
+vms:
+  - vmid: 101
+    name: master
+    node: compute-0
+    ip: 192.168.71.1
+
+  - vmid: 102
+    name: chunkserver
+    node: compute-0
+    ip: 192.168.71.2
