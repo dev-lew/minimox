@@ -1,2 +1,8 @@
 [proxmox]
 pve.home.arpa
+
+[master]
+192.168.71.1
+
+[chunkservers]
+192.168.71.2

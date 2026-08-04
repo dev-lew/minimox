@@ -11,14 +11,3 @@ template:
   name: ubuntu-26.04-template
   filename: resolute-server-cloudimg-amd64.img
   url: https://cloud-images.ubuntu.com/resolute/current/resolute-server-cloudimg-amd64.img
-
-vms:
-  - vmid: 101
-    name: master
-    node: compute-0
-    ip: 192.168.71.1
-
-  - vmid: 102
-    name: chunkserver
-    node: compute-0
-    ip: 192.168.71.2

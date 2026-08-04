@@ -1,0 +1,51 @@
+---
+- name: Generate chunkerserver
+  hosts: master
+  tasks:
+    - name: Create IP list
+      ansible.builtin.copy:
+        dest: /home/ubuntu/chunkserver-ips
+        owner: ubuntu
+        group: ubuntu
+        mode: "0644"
+        content: |
+          {% for vm in vms if vm.name != 'master' %}
+          {{ vm.ip }}
+          {% endfor %}
+
+    - name: Clone repository
+      ansible.builtin.git:
+        repo: "https://github.com/dev-lew/gfs.git"
+        dest: /home/ubuntu/gfs
+        version: main
+        update: true
+
+    - name: Build master binary
+      ansible.builtin.command:
+        argv:
+          - cargo
+          - build
+          - --release
+      args:
+        chdir: /home/ubuntu/gfs/master
+
+    - name: Install master systemd service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/master.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Master service
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=simple
+          User=ubuntu
+          WorkingDirectory=/home/ubuntu/gfs/master
+          ExecStart=/home/ubuntu/gfs/master/target/release/master home/ubuntu/chunkserver-ips
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
