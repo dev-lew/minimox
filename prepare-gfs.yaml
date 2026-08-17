@@ -1,7 +1,37 @@
 ---
-- name: Generate chunkerserver
+- name: Build gfs binaries
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Build master release binary
+      ansible.builtin.command:
+        argv:
+          - cargo
+          - build
+          - --release
+      args:
+        chdir: "~/code/gfs/master"
+
+    - name: Build chunkserver release binary
+      ansible.builtin.command:
+        argv:
+          - cargo
+          - build
+          - --release
+      args:
+        chdir: "~/code/gfs/chunkserver"
+
+- name: Deploy master
   hosts: master
   tasks:
+    - name: Copy master binary
+      ansible.builtin.copy:
+        src: "~/code/gfs/target/release/master"
+        dest: /home/ubuntu/master
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
     - name: Create IP list
       ansible.builtin.copy:
         dest: /home/ubuntu/chunkserver-ips
@@ -10,24 +40,8 @@
         mode: "0644"
         content: |
           {% for vm in vms if vm.name != 'master' %}
-          {{ vm.ip }}
+          {{ vm.ip }}:{{ vm.port }}
           {% endfor %}
-
-    - name: Clone repository
-      ansible.builtin.git:
-        repo: "https://github.com/dev-lew/gfs.git"
-        dest: /home/ubuntu/gfs
-        version: main
-        update: true
-
-    - name: Build master binary
-      ansible.builtin.command:
-        argv:
-          - cargo
-          - build
-          - --release
-      args:
-        chdir: /home/ubuntu/gfs/master
 
     - name: Install master systemd service
       ansible.builtin.copy:
@@ -42,10 +56,70 @@
           [Service]
           Type=simple
           User=ubuntu
-          WorkingDirectory=/home/ubuntu/gfs/master
-          ExecStart=/home/ubuntu/gfs/master/target/release/master home/ubuntu/chunkserver-ips
+          WorkingDirectory=/home/ubuntu/
+          ExecStart=/home/ubuntu/master /home/ubuntu/chunkserver-ips
           Restart=on-failure
           RestartSec=5
 
           [Install]
           WantedBy=multi-user.target
+      become: true
+
+- name: Deploy chunkserver
+  hosts: chunkservers
+  vars:
+    cfg_path: /home/ubuntu/chunkserver.cfg
+    chunk_dir: /var/lib/chunks
+    master_addr: "{{ vms | selectattr('name', 'equalto', 'master') |
+      map(attribute='ip') | first }}:{{ vms | selectattr('name', 'equalto',
+      'master') | map(attribute='port') | first }}"
+
+  tasks:
+    - name: Copy chunkserver binary
+      ansible.builtin.copy:
+        src: "~/code/gfs/target/release/chunkserver"
+        dest: /home/ubuntu/chunkserver
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Create chunkserver data directory
+      ansible.builtin.file:
+        path: "{{ chunk_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0750"
+      become: true
+
+    - name: Create chunkserver configuration
+      ansible.builtin.copy:
+        dest: "{{ cfg_path }}"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0644"
+        content: |
+          chunk_dir={{ chunk_dir }}
+          master_addr={{ master_addr }}
+
+    - name: Install chunkserver systemd service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/chunkserver.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Chunkserver service
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=simple
+          User=ubuntu
+          WorkingDirectory=/home/ubuntu/
+          ExecStart=/home/ubuntu/chunkserver {{ cfg_path }}
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+      become: true

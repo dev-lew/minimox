@@ -1,10 +1,15 @@
+ansible_user: ubuntu
+ansible_ssh_private_key_file: ~/.ssh/proxmox-id-ed25519
+
 vms:
   - vmid: 101
     name: master
     node: compute-0
     ip: 192.168.71.1
+    port: 50501
 
   - vmid: 102
     name: chunkserver-0
     node: compute-0
     ip: 192.168.71.2
+    port: 50501

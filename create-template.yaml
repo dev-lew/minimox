@@ -55,6 +55,15 @@
           - --scsi0
           - "local-lvm:vm-{{ template.vmid }}-disk-0"
 
+    - name: Resize template disk
+      ansible.builtin.command:
+        argv:
+          - qm
+          - resize
+          - "{{ template.vmid }}"
+          - scsi0
+          - 8G
+
     - name: Configure boot order
       community.proxmox.proxmox_kvm:
         node: "{{ template.node }}"

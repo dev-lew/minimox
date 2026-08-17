@@ -30,3 +30,11 @@
         update: true
       delegate_to: localhost
       loop: "{{ vms }}"
+
+    - name: Start VMs
+      community.proxmox.proxmox_kvm:
+        node: "{{ item.node }}"
+        vmid: "{{ item.vmid }}"
+        state: started
+      loop: "{{ vms }}"
+      delegate_to: localhost
